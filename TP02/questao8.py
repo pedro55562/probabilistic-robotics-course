@@ -24,25 +24,20 @@ def normalize_density(p: np.ndarray, dx: float) -> np.ndarray:
     return p / (np.sum(p) * dx)
 
 
-# Spatial grid.
 x = np.linspace(-8.0, 8.0, 1601)
 dx = x[1] - x[0]
 
-# A bimodal prior is used only to make the smoothing effect easy to see.
 bel_prior = 0.55 * gaussian(x, -2.0, 0.55) + 0.45 * gaussian(x, 1.4, 0.80)
 bel_prior = normalize_density(bel_prior, dx)
 
-# Motion-noise kernel: epsilon ~ N(0, sigma^2).
 sigma = 0.70
 offsets = (np.arange(x.size) - x.size // 2) * dx
 kernel = gaussian(offsets, 0.0, sigma)
 kernel = normalize_density(kernel, dx)
 
-# Prediction: bel_bar(x_t) = integral p(x_t|x_{t-1}) bel(x_{t-1}) dx_{t-1}.
 bel_pred = np.convolve(bel_prior, kernel, mode="same") * dx
 bel_pred = normalize_density(bel_pred, dx)
 
-# Plot. The kernel is drawn against displacement, but shares the same horizontal scale.
 fig, ax = plt.subplots(figsize=(8.0, 4.8))
 ax.plot(x, bel_prior, label="Belief anterior")
 ax.plot(offsets, kernel, linestyle="--", label=r"Kernel $\mathcal{N}(0,\sigma^2)$")

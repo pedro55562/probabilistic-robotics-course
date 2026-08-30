@@ -34,22 +34,18 @@ def moments(x: np.ndarray, p: np.ndarray, dx: float) -> tuple[float, float]:
 
 rng = np.random.default_rng(935)
 
-# Simulation parameters.
 steps = 30
 u = 0.80
 sigma_process = 0.45
 sigma_measurement = 1.00
 
-# Wide grid so boundary effects are negligible during the simulation.
 x_grid = np.linspace(-10.0, 40.0, 2501)
 dx = x_grid[1] - x_grid[0]
 
-# Initial belief and true state.
 bel = gaussian(x_grid, mean=0.0, std=1.0)
 bel = normalize_density(bel, dx)
 x_true = 0.30
 
-# Discrete convolution kernel for an increment u + epsilon.
 offsets = (np.arange(x_grid.size) - x_grid.size // 2) * dx
 motion_kernel = gaussian(offsets, mean=u, std=sigma_process)
 motion_kernel = normalize_density(motion_kernel, dx)
@@ -60,15 +56,12 @@ estimate_history = [moments(x_grid, bel, dx)[0]]
 std_history = [moments(x_grid, bel, dx)[1]]
 
 for _ in range(steps):
-    # Generate the true process and the noisy measurement.
     x_true = x_true + u + rng.normal(0.0, sigma_process)
     z = x_true + rng.normal(0.0, sigma_measurement)
 
-    # Prediction by convolution with the motion model.
     bel_pred = np.convolve(bel, motion_kernel, mode="same") * dx
     bel_pred = normalize_density(bel_pred, dx)
 
-    # Correction using the measurement likelihood.
     likelihood = gaussian(x_grid, mean=z, std=sigma_measurement)
     bel = normalize_density(likelihood * bel_pred, dx)
 

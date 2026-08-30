@@ -27,16 +27,13 @@ def moments(x: np.ndarray, p: np.ndarray, dx: float) -> tuple[float, float]:
 x = np.linspace(-6.0, 6.0, 1601)
 dx = x[1] - x[0]
 
-# Predicted belief used before the measurement update.
 bel_pred = gaussian(x, mean=0.0, std=1.30)
 bel_pred = normalize_density(bel_pred, dx)
 
-# Same measurement, two different sensor-noise levels.
 z = 1.50
 lik_narrow = gaussian(x, mean=z, std=0.45)
 lik_wide = gaussian(x, mean=z, std=1.80)
 
-# Bayes update: bel(x_t) = eta p(z_t|x_t) bel_bar(x_t).
 post_narrow = normalize_density(lik_narrow * bel_pred, dx)
 post_wide = normalize_density(lik_wide * bel_pred, dx)
 
