@@ -1,0 +1,330 @@
+\section{Fundamentos}
+
+
+\subsection{Control Barrier Functions}
+
+\begin{frame}
+
+    \frametitle{CBFs: Ideia Central}
+
+    \begin{columns}[c]
+
+        \begin{column}{0.55\textwidth}
+            Sistema \textbf{afim no controle}:
+            \[
+                \dot{\boldsymbol{x}} = \boldsymbol{f}(\boldsymbol{x}) + \boldsymbol{g}(\boldsymbol{x})\boldsymbol{u},
+                \quad \boldsymbol{x} \in \mathbb{R}^n,\; \boldsymbol{u} \in \mathcal{U} \subseteq \mathbb{R}^m
+            \]
+
+            Segurança codificada por uma função $h: \mathbb{R}^n \to \mathbb{R}$:
+            \begin{align*}
+                \mathcal{C} &= \{\boldsymbol{x} \mid h(\boldsymbol{x}) \geq 0\} && \text{(conjunto seguro)} \\
+                \partial\mathcal{C} &= \{\boldsymbol{x} \mid h(\boldsymbol{x}) = 0\} && \text{(fronteira)}
+            \end{align*}
+
+            \begin{block}{Segurança = invariância de $\mathcal{C}$}
+                $\boldsymbol{x}(t_0) \in \mathcal{C} \Rightarrow \boldsymbol{x}(t) \in \mathcal{C},\; \forall t \geq t_0$
+
+                {\small Quem começa seguro, continua seguro.}
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.42\textwidth}
+            \centering
+            \begin{tikzpicture}[scale=0.85]
+                \fill[IFSPPrimario!12] plot[smooth cycle, tension=0.8] coordinates {(0,0) (2.2,-0.4) (3.4,0.9) (2.6,2.6) (0.6,2.4) (-0.5,1.2)};
+                \draw[thick, IFSPPrimario] plot[smooth cycle, tension=0.8] coordinates {(0,0) (2.2,-0.4) (3.4,0.9) (2.6,2.6) (0.6,2.4) (-0.5,1.2)};
+                \node at (1.4,1.6) {$h(\boldsymbol{x}) > 0$};
+                \node at (1.4,1.1) {$\mathcal{C}$};
+                \node[IFSPPrimario] at (3.9,2.4) {$\partial\mathcal{C}$};
+                \node at (3.9,-0.5) {$h(\boldsymbol{x}) < 0$};
+                \draw[->, thick, black!70] (0.3,0.6) .. controls (1.5,0.3) and (2.4,0.2) .. (2.7,0.9) .. controls (2.9,1.4) .. (2.4,1.9);
+                \fill (0.3,0.6) circle (1.5pt) node[left] {\scriptsize $\boldsymbol{x}_0$};
+            \end{tikzpicture}
+
+            {\scriptsize A trajetória toca a fronteira, mas não sai de $\mathcal{C}$.}
+        \end{column}
+
+    \end{columns}
+
+\end{frame}
+
+
+\begin{frame}
+
+    \frametitle{CBFs: A Condição de Barreira}
+
+    Como $h$ varia ao longo do movimento:
+    \(
+        \dot{h}(\boldsymbol{x}, \boldsymbol{u})
+        = \frac{\partial h}{\partial \boldsymbol{x}} \big(\boldsymbol{f}(\boldsymbol{x}) + \boldsymbol{g}(\boldsymbol{x})\boldsymbol{u}\big)
+        = L_f h(\boldsymbol{x}) + L_g h(\boldsymbol{x})\, \boldsymbol{u}
+    \)
+
+    \begin{block}{Definição (CBF)}
+        $h$ é uma CBF se, para todo $\boldsymbol{x} \in \mathcal{C}$, existe $\boldsymbol{u} \in \mathcal{U}$ tal que
+        \[
+            \dot{h}(\boldsymbol{x}, \boldsymbol{u}) = L_f h(\boldsymbol{x}) + L_g h(\boldsymbol{x})\, \boldsymbol{u} \;\geq\; -\gamma\, h(\boldsymbol{x}), \qquad \gamma > 0
+        \]
+    \end{block}
+
+    \textbf{Interpretação}: $h$ pode diminuir, mas cada vez mais devagar perto da fronteira.
+    \begin{itemize}
+        \item \textbf{longe} da fronteira ($h \gg 0$): restrição frouxa, movimento livre;
+        \item \textbf{na} fronteira ($h = 0$): exige $\dot{h} \geq 0$, não pode avançar para fora;
+        \item \textbf{fora} de $\mathcal{C}$ ($h < 0$): exige $\dot{h} > 0$, é empurrado de volta.
+    \end{itemize}
+
+    {\small \textbf{Teorema} \cite{ames2019cbf}: todo controle (Lipschitz) que satisfaz a condição torna $\mathcal{C}$ invariante.}
+
+\end{frame}
+
+
+\begin{frame}
+
+    \frametitle{CBFs: Filtro de Segurança via QP}
+
+    O controlador nominal $\boldsymbol{u}_{\text{ref}}$ (LQR, operador, planejador\ldots) não precisa saber de segurança. A CBF o corrige \textbf{minimamente}:
+
+    \begin{block}{CBF-QP}
+        \[
+            \boldsymbol{u}^* = \arg\min_{\boldsymbol{u} \in \mathcal{U}} \; \|\boldsymbol{u} - \boldsymbol{u}_{\text{ref}}\|^2
+            \quad \text{s.a.} \quad
+            L_f h(\boldsymbol{x}) + L_g h(\boldsymbol{x})\, \boldsymbol{u} \geq -\gamma\, h(\boldsymbol{x})
+        \]
+    \end{block}
+
+    \begin{itemize}
+        \item A restrição é \textbf{linear em $\boldsymbol{u}$} $\Rightarrow$ problema quadrático convexo.
+        \item Resolvido a cada instante, em micro a milissegundos $\Rightarrow$ \textbf{tempo real}.
+        \item Se $\boldsymbol{u}_{\text{ref}}$ já é seguro, $\boldsymbol{u}^* = \boldsymbol{u}_{\text{ref}}$: o filtro só atua quando necessário.
+        \item Reativo: olha só o estado atual, sem horizonte de planejamento (diferente do MPC).
+    \end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+
+    \frametitle{CBFs: Exemplo 1D}
+
+    \begin{columns}[c]
+
+        \begin{column}{0.55\textwidth}
+            Robô em 1D, $\dot{x} = u$, com uma parede em $x_{\max}$:
+            \[
+                h(x) = x_{\max} - x \geq 0
+            \]
+
+            Condição de barreira ($L_f h = 0$, $L_g h = -1$):
+            \[
+                -u \geq -\gamma\,(x_{\max} - x)
+                \;\Longleftrightarrow\;
+                u \leq \gamma\,(x_{\max} - x)
+            \]
+
+            Solução do QP em forma fechada:
+            \[
+                u^* = \min\big(u_{\text{ref}},\; \gamma\,(x_{\max} - x)\big)
+            \]
+
+            {\small A velocidade permitida \textbf{cai linearmente} com a distância: o robô se aproxima, mas nunca bate.}
+        \end{column}
+
+        \begin{column}{0.42\textwidth}
+            \centering
+            \begin{tikzpicture}[scale=0.9]
+                \draw[->] (0,0) -- (4.2,0) node[below] {\scriptsize $x$};
+                \draw[->] (0,0) -- (0,3) node[left] {\scriptsize $u$};
+                \fill[IFSPPrimario!12] (0,0) -- (0,2.5) -- (3.4,0) -- cycle;
+                \draw[thick, IFSPPrimario] (0,2.5) -- (3.4,0);
+                \node[IFSPPrimario, anchor=south west] at (0.1,2.5) {\scriptsize $u = \gamma(x_{\max}-x)$};
+                \draw[dashed] (0,1.6) -- (4,1.6) node[right] {\scriptsize $u_{\text{ref}}$};
+                \fill[black!25] (3.4,0) rectangle (3.7,2.8);
+                \draw[thick] (3.4,0) -- (3.4,2.8);
+                \node[below] at (3.4,0) {\scriptsize $x_{\max}$};
+                \node at (0.9,0.6) {\scriptsize permitido};
+            \end{tikzpicture}
+        \end{column}
+
+    \end{columns}
+
+\end{frame}
+
+
+\begin{frame}
+
+    \frametitle{CBFs Clássicas: Limitação}
+
+    \begin{alertblock}{Suposição implícita}
+        A CBF clássica supõe que o \textbf{estado $\boldsymbol{x}$ é conhecido exatamente}.
+    \end{alertblock}
+
+    \vspace{2mm}
+
+    Na prática, temos apenas uma \textbf{estimativa} ruidosa (ex.: média $\boldsymbol{\mu}$ do EKF):
+    \begin{itemize}
+        \item Aplicar a CBF em $\boldsymbol{\mu}$ ignora a incerteza: a média pode estar segura enquanto o estado real não está.
+        \item Ruído e perturbações estocásticas não são limitados, então não há margem fixa que garanta segurança.
+    \end{itemize}
+
+    \vspace{2mm}
+
+    \centering
+    \textbf{Ideia do artigo}: aplicar a CBF sobre a \textbf{crença} $(\boldsymbol{\mu}, \boldsymbol{\Sigma})$, não sobre o estado.
+
+\end{frame}
+
+
+\subsection{Restrições de Chance}
+
+\begin{frame}
+
+    \frametitle{Restrições de Chance}
+
+    \begin{columns}[c]
+
+        \begin{column}{0.52\textwidth}
+            O EKF fornece a \textbf{crença} sobre o estado:
+            \[
+                \boldsymbol{x} \sim \mathcal{N}(\boldsymbol{\mu}, \boldsymbol{\Sigma}),
+                \qquad
+                \boldsymbol{b} = [\boldsymbol{\mu},\, \mathrm{vec}(\boldsymbol{\Sigma})]^T
+            \]
+
+            Segurança como semiespaço: $\boldsymbol{\alpha}^T\boldsymbol{x} \geq \beta$.
+
+            {\small Sempre há \alert{alguma} chance de violação (a Gaussiana tem suporte infinito), então não dá para exigir certeza.}
+
+            \begin{block}{Restrição de chance}
+                \[
+                    \Pr[\boldsymbol{\alpha}^T\boldsymbol{x} \geq \beta] \geq 1 - \delta
+                \]
+                {\small $\delta$ = risco aceito (ex.: $\delta = 0{,}01$ $\Rightarrow$ 99\% seguro).}
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.45\textwidth}
+            \centering
+            \begin{tikzpicture}[xscale=0.75, yscale=2.7]
+                \fill[IFSPPrimario!35] (-1,0) -- plot[domain=-1:0, samples=30] (\x, {exp(-((\x-1.8)^2)/2)}) -- (0,0) -- cycle;
+                \draw[->] (-1.2,0) -- (5.2,0) node[below] {\scriptsize $y = \boldsymbol{\alpha}^T\boldsymbol{x} - \beta$};
+                \draw[thick, IFSPPrimario] plot[domain=-1:4.6, samples=60, smooth] (\x, {exp(-((\x-1.8)^2)/2)});
+                \draw[thick] (0,0) -- (0,1.1);
+                \node[above] at (0,1.1) {\scriptsize fronteira};
+                \node[left] at (-0.05,0.6) {\scriptsize inseguro};
+                \node[right] at (3.3,0.6) {\scriptsize seguro};
+                \draw[->, black!70] (-0.9,0.25) node[left] {\scriptsize $\leq \delta$} -- (-0.35,0.08);
+                \draw[dashed] (1.8,0) -- (1.8,1) node[above] {\scriptsize média};
+            \end{tikzpicture}
+
+            {\scriptsize A área vermelha (probabilidade de violação) deve ser no máximo $\delta$.}
+        \end{column}
+
+    \end{columns}
+
+\end{frame}
+
+
+\begin{frame}
+
+    \frametitle{Value-at-Risk (VaR)}
+
+    \begin{block}{Definição}
+        \textbf{Quantil inferior}: o valor superado com probabilidade $1-\delta$.
+        \hfill
+        $\Pr\big(y \geq \mathrm{VaR}_\delta(y)\big) = 1 - \delta$
+    \end{block}
+
+    \begin{columns}[c]
+
+        \begin{column}{0.47\textwidth}
+            \small
+            \begin{itemize}
+                \item \textbf{Exemplo}: distância assinada até uma parede, $y \sim \mathcal{N}(1{,}0;\, 0{,}4^2)$ m, $\delta = 5\%$.
+                \item \textbf{Quantil de 5\%}:
+                    \(
+                        \mathrm{VaR}_{0{,}05}(y) = 1 - 1{,}645 \cdot 0{,}4 \approx 0{,}34 \text{ m}
+                    \)
+                \item \textbf{Interpretação}: com 95\% de chance, distância $\geq$ \textbf{34\,cm}.
+            \end{itemize}
+        \end{column}
+
+        \begin{column}{0.5\textwidth}
+            \centering
+            \begin{tikzpicture}[x=2.0cm, y=1.7cm]
+                \fill[IFSPPrimario!10] (0.34,0) -- plot[domain=0.34:2.4, samples=60] (\x, {exp(-((\x-1)^2)/0.32)}) -- (2.4,0) -- cycle;
+                \fill[IFSPPrimario!45] (-0.4,0) -- plot[domain=-0.4:0.34, samples=40] (\x, {exp(-((\x-1)^2)/0.32)}) -- (0.34,0) -- cycle;
+                \draw[thick, IFSPPrimario] plot[domain=-0.4:2.4, samples=80, smooth] (\x, {exp(-((\x-1)^2)/0.32)});
+                \draw[->] (-0.45,0) -- (2.5,0) node[below] {\scriptsize $y$ [m]};
+                \draw[dashed, black!50] (1,0) -- (1,1.02) node[above, black] {\scriptsize média};
+                \draw[very thick] (0.34,0) -- (0.34,0.4) node[above] {\scriptsize \textbf{VaR}};
+                \node[below] at (0,0) {\scriptsize 0};
+                \node[below] at (0.34,0) {\scriptsize 0,34};
+                \node[below] at (1,0) {\scriptsize 1,0};
+                \node[IFSPPrimario] at (-0.2,0.3) {\scriptsize \textbf{5\%}};
+                \node[IFSPPrimario] at (1.35,0.25) {\scriptsize \textbf{95\%}};
+            \end{tikzpicture}
+        \end{column}
+
+    \end{columns}
+
+    \begin{block}{Ligação com a restrição de chance}
+        $\Pr(y \geq 0) \geq 1 - \delta \;\Longleftrightarrow\; \mathrm{VaR}_\delta(y) \geq 0$
+        \hfill
+        {\small VaR não negativo $\Rightarrow$ risco dentro do limite.}
+    \end{block}
+
+\end{frame}
+
+
+\begin{frame}
+
+    \frametitle{VaR para Gaussianas: Forma Fechada}
+
+    Se $\boldsymbol{x} \sim \mathcal{N}(\boldsymbol{\mu}, \boldsymbol{\Sigma})$, então $y = \boldsymbol{\alpha}^T\boldsymbol{x} - \beta$ é Gaussiana escalar:
+    \[
+        y \sim \mathcal{N}\big(\underbrace{\boldsymbol{\alpha}^T\boldsymbol{\mu} - \beta}_{m_y},\; \underbrace{\boldsymbol{\alpha}^T\boldsymbol{\Sigma}\boldsymbol{\alpha}}_{s_y^2}\big)
+        \qquad \Rightarrow \qquad
+        \mathrm{VaR}_\delta(y) = m_y - z_\delta\, s_y
+    \]
+
+    \begin{columns}[c]
+
+        \begin{column}{0.62\textwidth}
+            \begin{block}{Restrição de chance como função da crença}
+                \[
+                    h_b(\boldsymbol{b}) =
+                    \underbrace{\boldsymbol{\alpha}^T\boldsymbol{\mu} - \beta}_{\text{distância da média}}
+                    \;-\;
+                    \underbrace{z_\delta \sqrt{\boldsymbol{\alpha}^T\boldsymbol{\Sigma}\boldsymbol{\alpha}}}_{\text{margem pela incerteza}}
+                    \;\geq\; 0
+                \]
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.33\textwidth}
+            \centering
+            \small
+            \begin{tabular}{cc}
+                \toprule
+                $\delta$ & $z_\delta$ \\
+                \midrule
+                0,10 & 1,28 \\
+                0,05 & 1,64 \\
+                0,01 & 2,33 \\
+                \bottomrule
+            \end{tabular}
+
+            {\tiny $z_\delta = \sqrt{2}\,\mathrm{erf}^{-1}(1-2\delta)$}
+        \end{column}
+
+    \end{columns}
+
+    \begin{itemize}
+        \item A média precisa ficar a pelo menos $z_\delta$ desvios-padrão da fronteira.
+        \item Mais incerteza ($\boldsymbol{\Sigma}$ maior) ou menos risco ($\delta$ menor) $\Rightarrow$ margem maior.
+        \item $h_b$ é uma função \textbf{determinística} de $\boldsymbol{b}$, que pode servir de CBF sobre a crença.
+    \end{itemize}
+
+\end{frame}
